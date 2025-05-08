@@ -1,0 +1,5 @@
+# The host IP address is now set in host_vars/monitor.yml for security.
+# This file only contains the host alias and user.
+[monitoring]
+monitor ansible_user=root
+

@@ -1,0 +1,31 @@
+; Example Ansible Inventory File for Solana Validator Node Exporter
+
+; Defined groups of validator servers (You can break this down further if you want)
+[testnet_validators]
+; Replace with the IP address or hostname of your Solana validator
+; You can list multiple hosts here, one per line.
+; For example:
+; validator1.example.com
+; 192.168.1.100
+your_validator_ip_or_hostname
+
+[mainnet_validators]
+; Replace with the IP address or hostname of your Solana validator
+; You can list multiple hosts here, one per line.
+; For example:
+; validator1.example.com
+; 192.168.1.100
+your_validator_ip_or_hostname
+
+
+; You can also specify connection variables per host or per group if needed.
+; For example, if your SSH user is different from your local user:
+; your_validator_ip_or_hostname ansible_user=your_ssh_user
+
+; Or if you need to specify a private key:
+; your_validator_ip_or_hostname ansible_user=your_ssh_user ansible_ssh_private_key_file=/path/to/your/ssh_key
+
+[all:vars]
+; You can define variables that apply to all hosts here, if necessary.
+; For example:
+; ansible_python_interpreter=/usr/bin/python3 

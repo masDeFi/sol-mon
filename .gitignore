@@ -1,0 +1,47 @@
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Editor swap/backup files
+*~
+*.swp
+*.swo
+*.bak
+
+# Python cache (if any Python scripts are added)
+__pycache__/
+*.pyc
+
+# Ansible artifacts
+*.retry
+
+# Ignore all inventory.ini files except inventory.ini.example
+inventory.ini
+!inventory.ini.example
+
+# Logs
+*.log
+
+# Docker artifacts (if you generate these locally)
+docker-compose.override.yml
+
+# Ignore secrets (uncomment if you add any)
+# secrets.yml
+# *.vault
+
+# Ignore environment files
+.env
+.env.*
+prometheus.yml
+
+# Ignore any local override files
+*.local
+
+# Ignore files in .git (handled by git itself, but for clarity)
+.git/
+
+# Ignore group_vars secrets
+group_vars/all.yml
+
+# Ignore host_vars with sensitive data
+host_vars/monitor.yml

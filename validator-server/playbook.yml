@@ -1,0 +1,99 @@
+---
+- name: Configure Node Exporter on Solana Validator
+  hosts: all # Or specify your target hosts group
+  become: true # Most tasks require sudo
+  vars:
+    node_exporter_version: "1.7.0"
+    node_exporter_user: "node_exporter"
+    node_exporter_install_dir: "/opt/node_exporter"
+    node_exporter_listen_addr: "127.0.0.1:9100" # Use 0.0.0.0 to open to remote then lock down with firewall
+    node_exporter_archive_url: "https://github.com/prometheus/node_exporter/releases/download/v{{ node_exporter_version }}/node_exporter-{{ node_exporter_version }}.linux-amd64.tar.gz"
+    node_exporter_binary_path: "{{ node_exporter_install_dir }}/node_exporter"
+    node_exporter_service_file_path: "/etc/systemd/system/node_exporter.service"
+
+  tasks:
+    - name: Ensure essential packages are installed (for apt-based systems)
+      ansible.builtin.apt:
+        name:
+          - wget
+          - tar
+        state: present
+      when: ansible_os_family == "Debian" # Adjust for other OS families like RedHat
+
+    - name: Create node_exporter system user
+      ansible.builtin.user:
+        name: "{{ node_exporter_user }}"
+        shell: /bin/false
+        system: true
+        state: present
+
+    - name: Download and extract Node Exporter
+      ansible.builtin.unarchive:
+        src: "{{ node_exporter_archive_url }}"
+        dest: /tmp
+        remote_src: true
+        creates: "/tmp/node_exporter-{{ node_exporter_version }}.linux-amd64/node_exporter" # Avoids re-downloading/extracting if already present
+
+    - name: Create installation directory
+      ansible.builtin.file:
+        path: "{{ node_exporter_install_dir }}"
+        state: directory
+        owner: "{{ node_exporter_user }}"
+        group: "{{ node_exporter_user }}"
+        mode: '0755'
+
+    - name: Install Node Exporter binary
+      ansible.builtin.copy:
+        src: "/tmp/node_exporter-{{ node_exporter_version }}.linux-amd64/node_exporter"
+        dest: "{{ node_exporter_binary_path }}"
+        remote_src: true
+        owner: "{{ node_exporter_user }}"
+        group: "{{ node_exporter_user }}"
+        mode: '0755'
+
+    - name: Clean up temporary download
+      ansible.builtin.file:
+        path: "/tmp/node_exporter-{{ node_exporter_version }}.linux-amd64"
+        state: absent
+
+    - name: Create systemd service file for Node Exporter
+      ansible.builtin.template:
+        src: node_exporter.service.j2 # We'll create this template file next
+        dest: "{{ node_exporter_service_file_path }}"
+        owner: root
+        group: root
+        mode: '0644'
+      notify:
+        - Reload systemd and restart node_exporter # Handler to restart service on change
+
+    - name: Ensure Node Exporter service is enabled and started
+      ansible.builtin.systemd:
+        name: node_exporter
+        state: started
+        enabled: true
+        daemon_reexec: true # Equivalent to systemctl daemon-reexec
+
+    - name: Wait for Node Exporter to be accessible
+      ansible.builtin.wait_for:
+        host: "{{ node_exporter_listen_addr.split(':')[0] }}"
+        port: "{{ node_exporter_listen_addr.split(':')[1] }}"
+        delay: 5 # Wait 5 seconds before first check
+        timeout: 30 # Timeout after 30 seconds
+      register: node_exporter_wait_result
+
+    - name: Verify Node Exporter metrics endpoint
+      ansible.builtin.uri:
+        url: "http://{{ node_exporter_listen_addr }}/metrics"
+        method: GET
+        status_code: 200
+      register: metrics_response
+      failed_when: "'# HELP' not in metrics_response.content"
+      changed_when: false # This task doesn't change state
+
+    - name: Display success message
+      ansible.builtin.debug:
+        msg: "Node Exporter is running and metrics are available at http://{{ node_exporter_listen_addr }}/metrics"
+      when: metrics_response.status == 200 and "'# HELP' in metrics_response.content"
+
+  handlers:
+    # Handlers are defined in validator-server/handlers/main.yml

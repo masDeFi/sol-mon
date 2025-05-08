@@ -1,0 +1,16 @@
+global:
+  scrape_interval: 30s
+
+scrape_configs:
+  - job_name: 'REPLACE_WITH_JOB_NAME_1'
+    static_configs:
+      - targets: ['REPLACE_WITH_IP_1:9100']
+        labels:
+          instance_name: 'REPLACE_WITH_INSTANCE_NAME_1'
+  - job_name: 'REPLACE_WITH_JOB_NAME_2'
+    scrape_interval: 60s
+    scrape_timeout: 30s
+    static_configs:
+      - targets: ['REPLACE_WITH_IP_2:9100']
+        labels:
+          instance_name: 'REPLACE_WITH_INSTANCE_NAME_2'

@@ -1,0 +1,4 @@
+# This file contains variables specific to the 'monitor' host.
+# Set 'ansible_host' to the IP address or hostname of your monitoring server.
+# This file is excluded from version control to protect sensitive information.
+ansible_host: 192.241.159.180 
