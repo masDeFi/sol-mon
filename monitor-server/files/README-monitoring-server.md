@@ -73,7 +73,7 @@ Before running the Ansible playbook, you must specify your server's IP address:
 2. Replace `REPLACE_ME` with your server's IP address, for example:
    
    ```yaml
-   ansible_host: 192.241.159.180
+   ansible_host: 191.123.456.7
    ```
 3. Save the file.
 

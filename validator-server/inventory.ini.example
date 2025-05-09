@@ -14,7 +14,7 @@ your_validator_ip_or_hostname
 ; You can list multiple hosts here, one per line.
 ; For example:
 ; validator1.example.com
-; 192.168.1.100
+; 190.111.2.345
 your_validator_ip_or_hostname
 
 

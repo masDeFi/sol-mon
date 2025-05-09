@@ -6,13 +6,19 @@
     node_exporter_version: "1.7.0"
     node_exporter_user: "node_exporter"
     node_exporter_install_dir: "/opt/node_exporter"
-    node_exporter_listen_addr: "127.0.0.1:9100" # Use 0.0.0.0 to open to remote then lock down with firewall
+    node_exporter_listen_addr: "0.0.0.0:9100" # Use 0.0.0.0 to open to remote then lock down with firewall
     node_exporter_archive_url: "https://github.com/prometheus/node_exporter/releases/download/v{{ node_exporter_version }}/node_exporter-{{ node_exporter_version }}.linux-amd64.tar.gz"
     node_exporter_binary_path: "{{ node_exporter_install_dir }}/node_exporter"
     node_exporter_service_file_path: "/etc/systemd/system/node_exporter.service"
 
+  pre_tasks:
+    - name: Verify Ubuntu OS
+      ansible.builtin.fail:
+        msg: "This playbook is designed to run on Ubuntu servers only"
+      when: ansible_distribution != "Ubuntu"
+
   tasks:
-    - name: Ensure essential packages are installed (for apt-based systems)
+    - name: Ensure essential packages are installed
       ansible.builtin.apt:
         name:
           - wget
@@ -20,7 +26,7 @@
         state: present
       when: ansible_os_family == "Debian" # Adjust for other OS families like RedHat
 
-    - name: Create node_exporter system user
+    - name: Create node_exporter user
       ansible.builtin.user:
         name: "{{ node_exporter_user }}"
         shell: /bin/false
@@ -83,17 +89,67 @@
 
     - name: Verify Node Exporter metrics endpoint
       ansible.builtin.uri:
-        url: "http://{{ node_exporter_listen_addr }}/metrics"
+        url: "http://{{ ansible_host }}:9100/metrics"
         method: GET
         status_code: 200
+        return_content: yes
       register: metrics_response
       failed_when: "'# HELP' not in metrics_response.content"
       changed_when: false # This task doesn't change state
 
     - name: Display success message
       ansible.builtin.debug:
-        msg: "Node Exporter is running and metrics are available at http://{{ node_exporter_listen_addr }}/metrics"
+        msg: "Node Exporter is running and metrics are available at http://{{ ansible_host }}/metrics"
       when: metrics_response.status == 200 and "'# HELP' in metrics_response.content"
 
+    - name: Ensure UFW is installed
+      ansible.builtin.apt:
+        name: ufw
+        state: present
+
+    - name: Check if UFW is enabled
+      ansible.builtin.command: ufw status
+      register: ufw_status
+      changed_when: false
+      check_mode: false
+
+    - name: Fail if UFW is not enabled
+      ansible.builtin.fail:
+        msg: "UFW is not enabled. Please enable UFW manually before running this playbook."
+      when: "'Status: active' not in ufw_status.stdout"
+
+    - name: Remove existing 9100 rules
+      ansible.builtin.command: ufw delete allow 9100/tcp
+      changed_when: true
+      ignore_errors: true
+
+    - name: Remove existing 9100 deny rules
+      ansible.builtin.command: ufw delete deny 9100/tcp
+      changed_when: true
+      ignore_errors: true
+
+    - name: Deny all access to Node Exporter port
+      ansible.builtin.ufw:
+        rule: deny
+        port: 9100
+        proto: tcp
+        insert: 1
+
+    - name: Allow Node Exporter metrics from monitoring server only
+      ansible.builtin.ufw:
+        rule: allow
+        port: 9100
+        proto: tcp
+        from_ip: "{{ monitoring_server_ip }}"
+        insert: 2
+
+    - name: Reload UFW to apply changes
+      ansible.builtin.command: ufw reload
+      changed_when: true
+
   handlers:
-    # Handlers are defined in validator-server/handlers/main.yml
+    - name: Reload systemd and restart node_exporter
+      ansible.builtin.systemd:
+        name: node_exporter
+        state: restarted
+        daemon_reload: true 
