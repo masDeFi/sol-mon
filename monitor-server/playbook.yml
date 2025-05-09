@@ -1,6 +1,6 @@
 ---
 - name: Set up Solana Validator Monitoring Server
-  hosts: monitoring
+  hosts: monitoring-backup
   become: yes
 
   vars:
@@ -15,6 +15,12 @@
         groups: sudo
         password: "{{ monitoring_user_password | password_hash('sha512') }}"
 
+    - name: Add SSH key for monitoring user
+      authorized_key:
+        user: "{{ monitoring_user }}"
+        state: present
+        key: "{{ lookup('file', '{{ path_to_ssh_key }}') }}"
+    
     - name: Disable root SSH access
       lineinfile:
         path: /etc/ssh/sshd_config
@@ -25,13 +31,6 @@
       service:
         name: ssh
         state: restarted
-
-    - name: Add SSH key for monitoring user
-      authorized_key:
-        user: "{{ monitoring_user }}"
-        state: present
-        key: "{{ path_to_ssh_key }}"
-
 
   tasks:
     - name: Install required packages
@@ -107,7 +106,7 @@
 
     - name: Create Prometheus config
       copy:
-        src: "{{ playbook_dir }}/../files/prometheus.yml"
+        src: "{{ playbook_dir }}/files/prometheus.yml"
         dest: /home/{{ monitoring_user }}/prometheus/prometheus.yml
         owner: "{{ monitoring_user }}"
         group: "{{ monitoring_user }}"
@@ -157,7 +156,7 @@
 
     - name: Copy monitoring server README to user home
       copy:
-        src: "{{ playbook_dir }}/../files/README-monitoring-server.md"
+        src: "{{ playbook_dir }}/files/README-monitoring-server.md"
         dest: "/home/{{ monitoring_user }}/README-monitoring-server.md"
         owner: "{{ monitoring_user }}"
         group: "{{ monitoring_user }}"
@@ -181,7 +180,7 @@
 
     - name: Copy systemd unit file for monitoring stack
       template:
-        src: "{{ playbook_dir }}/../files/monitoring-docker-compose.service.j2"
+        src: "{{ playbook_dir }}/files/monitoring-docker-compose.service.j2"
         dest: /etc/systemd/system/monitoring-docker-compose.service
         owner: root
         group: root
