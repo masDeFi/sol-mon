@@ -1,4 +1,4 @@
-# Solana Validator Monitoring Server Ansible Playbook
+# Sol-Mon: Monitoring Server Ansible Playbook
 
 This Ansible playbook sets up a monitoring server for Solana validators using Prometheus and Grafana. It automates the deployment of a complete monitoring stack with security best practices.
 

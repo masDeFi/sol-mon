@@ -1,4 +1,12 @@
 #!/usr/bin/env bash
+
+# This script performs a series of checks to ensure that the monitoring stack
+# (including Prometheus and Grafana) is correctly configured and running.
+# It checks the syntax of the docker-compose file, validates the Prometheus
+# configuration, checks the status of the containers, and verifies the health
+# of the Grafana service. If any checks fail, it provides commands to view
+# the logs for further investigation.
+
 set -eo pipefail
 
 BASE_DIR="/opt/monitoring"

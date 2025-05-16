@@ -1,0 +1,31 @@
+---
+# BOOTSTRAP PLAYBOOK - Run once as root
+- name: Bootstrap Monitoring Server (create user and secure access)
+  hosts: monitoring-backup
+  become: yes
+  vars:
+    path_to_ssh_key:"{{ lookup('file', root_ssh_key) }}"
+  tasks:
+    - name: Create monitoring user
+      user:
+        name: "{{ monitoring_user }}"
+        shell: /bin/bash
+        groups: sudo
+        password: "{{ monitoring_user_password | password_hash('sha512') }}"
+
+    - name: Add SSH key for monitoring user
+      authorized_key:
+        user: "{{ monitoring_user }}"
+        state: present
+        key: "{{ lookup('file', path_to_ssh_key) }}"
+
+    - name: Disable root SSH access
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^PermitRootLogin'
+        line: 'PermitRootLogin no'
+
+    - name: Restart SSH
+      service:
+        name: ssh
+        state: restarted

@@ -1,6 +1,0 @@
-monitoring_user: "{{ lookup('env', 'MONITORING_USER_NAME') }}"
-monitoring_user_password: "{{ lookup('env', 'MONITORING_USER_PASSWORD') }}"
-path_to_ssh_key: "{{ lookup('env', 'SSH_KEY_PATH') }}"
-prometheus_version: latest
-grafana_docker_tag: "grafana/grafana-oss:10.2.3"
-

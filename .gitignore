@@ -41,7 +41,11 @@ prometheus.yml
 .git/
 
 # Ignore group_vars secrets
-group_vars/all.yml
+monitor-server/group_vars/*.yml
+validator-server/group_vars/*.yml
 
 # Ignore host_vars with sensitive data
 host_vars/monitor.yml
+
+# Ignore group_vars/all.yml
+monitor-server/group_vars/all.yml

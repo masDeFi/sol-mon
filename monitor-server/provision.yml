@@ -1,0 +1,172 @@
+---
+# PROVISION PLAYBOOK - Run as {{ monitoring_user }} from now on
+- name: Provision Monitoring Stack
+  hosts: monitoring-backup
+  become: yes
+  vars:
+    prometheus_version: "v2.51.1"
+    grafana_docker_tag: "grafana/grafana-oss:10.2.3"
+    monitoring_user: monitoring
+  tasks:
+    - name: Install required packages
+      apt:
+        name:
+          - docker.io
+          - docker-compose
+          - ufw
+          - fail2ban
+        state: present
+        update_cache: yes
+
+    - name: Ensure Docker service is started and enabled
+      systemd:
+        name: docker
+        state: started
+        enabled: yes
+
+    - name: Add monitoring user to docker group
+      user:
+        name: "{{ monitoring_user }}"
+        groups: docker
+        append: yes
+
+    - name: Enable UFW and allow necessary ports
+      ufw:
+        rule: allow
+        port: "{{ item }}"
+      loop:
+        - 22
+        - 9090
+        - 3000
+        - 9100
+
+    - name: Enable UFW
+      ufw:
+        state: enabled
+
+    - name: Create monitoring directory
+      file:
+        path: /opt/monitoring
+        state: directory
+        owner: "{{ monitoring_user }}"
+        group: "{{ monitoring_user }}"
+
+    - name: Deploy docker-compose.yml
+      copy:
+        dest: "/home/{{ monitoring_user }}/docker-compose.yml"
+        content: |
+          version: '3'
+          services:
+            prometheus:
+              image: prom/prometheus:{{ prometheus_version }}
+              volumes:
+                - /home/{{ monitoring_user }}/prometheus:/etc/prometheus
+              ports:
+                - "9090:9090"
+
+            grafana:
+              image: {{ grafana_docker_tag }}
+              ports:
+                - "3000:3000"
+              volumes:
+                - /home/{{ monitoring_user }}/grafana:/var/lib/grafana
+
+    - name: Create Prometheus config directory
+      file:
+        path: /home/{{ monitoring_user }}/prometheus
+        state: directory
+        owner: "{{ monitoring_user }}"
+        group: "{{ monitoring_user }}"
+        mode: '0755'
+
+    - name: Create Prometheus config
+      copy:
+        src: "{{ playbook_dir }}/files/prometheus.yml"
+        dest: /home/{{ monitoring_user }}/prometheus/prometheus.yml
+        owner: "{{ monitoring_user }}"
+        group: "{{ monitoring_user }}"
+        mode: '0644'
+
+    - name: Create Grafana dashboards directory
+      file:
+        path: /home/{{ monitoring_user }}/grafana/dashboards
+        state: directory
+        owner: "{{ monitoring_user }}"
+        group: "{{ monitoring_user }}"
+        mode: '0755'
+        recurse: yes
+
+    - name: Create placeholder Grafana dashboard
+      copy:
+        dest: /home/{{ monitoring_user }}/grafana/dashboards/solana-validator.json
+        content: |
+          {
+            "title": "Solana Validator",
+            "panels": [],
+            "timezone": "browser",
+            "schemaVersion": 16,
+            "version": 1
+          }
+
+    - name: Ensure Grafana plugins directory exists
+      file:
+        path: /home/{{ monitoring_user }}/grafana/plugins
+        state: directory
+        mode: '0775'
+
+    - name: Set correct permissions for Grafana data directory
+      file:
+        path: /home/{{ monitoring_user }}/grafana
+        owner: 472
+        group: 472
+        recurse: yes
+
+    - name: Copy monitoring check script
+      copy:
+        dest: "/home/{{ monitoring_user }}/check_monitoring.sh"
+        content: "{{ lookup('file', '../scripts/check_monitoring.sh') }}"
+        owner: "{{ monitoring_user }}"
+        group: "{{ monitoring_user }}"
+        mode: '0755'
+
+    - name: Copy README to user home
+      copy:
+        src: "{{ playbook_dir }}/files/README-monitoring-server.md"
+        dest: "/home/{{ monitoring_user }}/README-monitoring-server.md"
+        owner: "{{ monitoring_user }}"
+        group: "{{ monitoring_user }}"
+        mode: '0644'
+
+    - name: Set ownership of monitoring directory
+      file:
+        path: /opt/monitoring
+        state: directory
+        recurse: yes
+        owner: "{{ monitoring_user }}"
+        group: "{{ monitoring_user }}"
+
+    - name: Set ownership of prometheus config directory
+      file:
+        path: /home/{{ monitoring_user }}/prometheus
+        state: directory
+        recurse: yes
+        owner: "{{ monitoring_user }}"
+        group: "{{ monitoring_user }}"
+
+    - name: Copy systemd unit file for monitoring stack
+      template:
+        src: "{{ playbook_dir }}/files/monitoring-docker-compose.service.j2"
+        dest: /etc/systemd/system/monitoring-docker-compose.service
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Reload systemd daemon
+      systemd:
+        daemon_reload: yes
+
+    - name: Enable and start monitoring-docker-compose service
+      systemd:
+        name: monitoring-docker-compose
+        enabled: yes
+        state: started
