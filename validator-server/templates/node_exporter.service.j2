@@ -8,13 +8,14 @@ User={{ node_exporter_user }}
 Group={{ node_exporter_user }}
 Type=simple
 # Limit to base useful data
-ExecStart={{ node_exporter_binary_path }} --web.listen-address={{ node_exporter_listen_addr }} \
-  --collector.disable-defaults \
-  --collector.cpu \
-  --collector.meminfo \
-  --collector.filesystem \
-  --collector.loadavg \
-  --collector.netdev
+ExecStart={{ node_exporter_binary_path }} --web.listen-address={{ node_exporter_listen_addr }} #\
+# Uncomment to limit to specific metrics
+#  --collector.disable-defaults \
+#  --collector.cpu \
+#  --collector.meminfo \
+#  --collector.filesystem \
+#  --collector.loadavg \
+#  --collector.netdev
 
 Restart=on-failure
 
