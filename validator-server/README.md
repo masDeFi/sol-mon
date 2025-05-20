@@ -38,11 +38,21 @@ Update to your server configuration
 
 
 ### Run the playbook:
-
 ```bash
-ansible-playbook -i <your_inventory_file> playbook.yml
+ansible-playbook -i <your_inventory_file> playbook.yml --limit <server/group>
 ```
 
-## Handlers
+### Next
+1. Add new prometheus entry
+2. Restart prometheus
+3. Create dashboard for server
 
-The playbook includes a handler to reload the systemd daemon and restart the `node_exporter` service if the systemd service file template changes. 
+### Troubleshooting
+Test metrics are sharing
+```sh
+curl http://localhost:9100/metrics | grep "cpu"
+```
+
+Confirm ufw rules allow and order
+[ 1] <monitor-port>/tcp      ALLOW IN    <monitoring-server-ip>            
+[ 2] <monitor-port>/tcp      DENY IN     Anywhere 

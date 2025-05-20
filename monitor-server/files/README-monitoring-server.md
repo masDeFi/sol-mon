@@ -10,20 +10,23 @@ Service Management (as root or with sudo):
 sudo systemctl status monitoring-docker-compose
 
 # Start the stack
-sudo systemctl start monitoring-docker-compose
+sudo systemctl start monitoring-docker-compose  
+docker-compose up -d  
 
 # Stop the stack
-sudo systemctl stop monitoring-docker-compose
+sudo systemctl stop monitoring-docker-compose  
+docker-compose down  
+
 
 # Restart the stack
 sudo systemctl restart monitoring-docker-compose
 
 # View logs for all containers
 cd ~
-sudo docker-compose -f ~/docker-compose.yml logs
+docker-compose -f ./docker-compose.yml logs
 
 # View logs for a specific service (e.g., prometheus or grafana)
-sudo docker-compose -f ~/docker-compose.yml logs prometheus
+docker-compose -f docker-compose.yml logs prometheus
 sudo docker-compose -f ~/docker-compose.yml logs grafana
 
 

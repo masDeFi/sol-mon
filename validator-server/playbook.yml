@@ -2,14 +2,6 @@
 - name: Configure Node Exporter on Solana Validator
   hosts: all # Or specify your target hosts group
   become: true # Most tasks require sudo
-  vars:
-    node_exporter_version: "1.7.0"
-    node_exporter_user: "node_exporter"
-    node_exporter_install_dir: "/opt/node_exporter"
-    node_exporter_listen_addr: "0.0.0.0:9100" # Use 0.0.0.0 to open to remote then lock down with firewall
-    node_exporter_archive_url: "https://github.com/prometheus/node_exporter/releases/download/v{{ node_exporter_version }}/node_exporter-{{ node_exporter_version }}.linux-amd64.tar.gz"
-    node_exporter_binary_path: "{{ node_exporter_install_dir }}/node_exporter"
-    node_exporter_service_file_path: "/etc/systemd/system/node_exporter.service"
 
   pre_tasks:
     - name: Verify Ubuntu OS
@@ -128,19 +120,19 @@
       changed_when: true
       ignore_errors: true
 
-    - name: Deny all access to Node Exporter port
-      ansible.builtin.ufw:
-        rule: deny
-        port: 9100
-        proto: tcp
-        insert: 1
-
     - name: Allow Node Exporter metrics from monitoring server only
       ansible.builtin.ufw:
         rule: allow
-        port: 9100
+        port: "{{ monitor_port }}"
         proto: tcp
         from_ip: "{{ monitoring_server_ip }}"
+        insert: 1
+
+    - name: Deny all access to Node Exporter port
+      ansible.builtin.ufw:
+        rule: deny
+        port: "{{ monitor_port }}"
+        proto: tcp
         insert: 2
 
     - name: Reload UFW to apply changes

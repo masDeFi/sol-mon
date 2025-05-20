@@ -49,3 +49,6 @@ host_vars/monitor.yml
 
 # Ignore group_vars/all.yml
 monitor-server/group_vars/all.yml
+
+# Ignore Dashboard files
+monitor-server/roles/upload_dashboard/files/*.json

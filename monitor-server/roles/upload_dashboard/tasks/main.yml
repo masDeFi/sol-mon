@@ -1,0 +1,35 @@
+- name: Ensure dashboards directory exists
+  file:
+    path: /etc/grafana/provisioning/dashboards
+    state: directory
+    owner: grafana
+    mode: 0755
+
+- name: Copy dashboard JSONs
+  copy:
+    src: files/grafana_dashboards/
+    dest: /etc/grafana/provisioning/dashboards/
+    owner: grafana
+    mode: 0644
+  with_fileglob: files/grafana_dashboards/*.json
+
+- name: Drop dashboard provisioning config
+  copy:
+    dest: /etc/grafana/provisioning/dashboards/validators.yaml
+    content: |
+      apiVersion: 1
+      providers:
+        - name: 'Solana Validators'
+          orgId: 1
+          folder: 'Solana Validators'
+          type: file
+          disableDeletion: true
+          options:
+            path: /etc/grafana/provisioning/dashboards
+    owner: grafana
+    mode: 0644
+
+- name: Restart Grafana to pick up new dashboards
+  service:
+    name: grafana-server
+    state: restarted
