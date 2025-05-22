@@ -6,7 +6,7 @@ Node Exporter is a Prometheus exporter for hardware and OS metrics, written in G
 
 ## Playbook Details
 
-The `playbook.yml` automates the following:
+The `validaor-server/playbook.yml` automates the following:
 
 *   Installs necessary packages (`wget`, `tar`).
 *   Creates a dedicated system user for Node Exporter (`node_exporter`).
@@ -39,7 +39,8 @@ Update to your server configuration
 
 ### Run the playbook:
 ```bash
-ansible-playbook -i <your_inventory_file> playbook.yml --limit <server/group>
+# Setup Validator
+ansible-playbook -i validator-server/playbook.yml playbook.yml --limit <server/group>
 ```
 
 ### Next
